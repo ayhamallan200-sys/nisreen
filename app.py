@@ -64,7 +64,7 @@ if submit and not st.session_state.game_over:
         st.balloons()
         st.markdown("""
             <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" type="audio/mpeg">
+                <source src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" type="audio/mpeg">
             </audio>
         """, unsafe_allow_html=True)
 
