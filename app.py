@@ -8,7 +8,6 @@ st.set_page_config(page_title="Stars & Moons - Game Hub", page_icon="⭐", layou
 
 SCORES_FILE = "scores.json"
 
-# دالة لتسوية وتوحيد الكلمات (الهمزات والتاء المربوطة)
 def normalize_arabic(text):
     if not text:
         return ""
@@ -19,7 +18,6 @@ def normalize_arabic(text):
     text = re.sub(r"\s+", " ", text)
     return text
 
-# إدارة حفظ واسترجاع النتائج
 def load_saved_scores():
     if os.path.exists(SCORES_FILE):
         try:
@@ -48,37 +46,48 @@ st.markdown("""
         border-radius: 12px;
         font-weight: bold;
     }
+    .hint-box {
+        background: rgba(234, 179, 8, 0.15);
+        border: 1px dashed #eab308;
+        padding: 12px;
+        border-radius: 10px;
+        margin: 10px 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# بنك الكلمات المطور
-WORDS_DATA = {
-    "سهل": ["شمس", "قمر", "نجم", "بحر", "طير", "ورد"],
-    "متوسط": ["كوكب", "صاروخ", "مجرة", "سفينة", "سحاب", "غابة"],
-    "صعب": ["ثقب_اسود", "نيازك_ملتهبه", "مكوك_فضائي", "مجره_اندروميدا", "تلسكوب_جيمس_ويب", "جاذبيه_كونيه"]
+# بنوك الأسئلة الموسعة
+WORDS_BANK = {
+    "سهل": ["شمس", "قمر", "نجم", "بحر", "طير", "ورد", "شجر", "نهر", "سمك", "جبل"],
+    "متوسط": ["كوكب", "صاروخ", "مجرة", "سفينة", "سحاب", "غابة", "تلسكوب", "نيزك", "صحراء", "بركان"],
+    "صعب": ["ثقب_اسود", "نيازك_ملتهبه", "مكوك_فضائي", "مجره_اندروميدا", "تلسكوب_جيمس_ويب", "جاذبيه_كونيه", "سديم_كوني", "انفجار_عظيم"]
 }
 
-# بنك الحيوانات مع مرونة الهمزات وتحدي الصعب
-ANIMALS_DATA = {
+ANIMALS_BANK = {
     "سهل": [
-        {"animal": "اسد", "display": "أسد", "clues": ["ملك الغابة", "له زئير قوي", "يعيش في جماعات"]},
-        {"animal": "قطه", "display": "قطة", "clues": ["حيوان أليف", "صوته مواء", "يحب اللعب بالخيوط"]},
-        {"animal": "فيل", "display": "فيل", "clues": ["أضخم حيوان بري", "يمتلك خرطوماً طويلاً", "له أنياب عاجية"]}
+        {"animal": "اسد", "display": "أسد", "clues": ["ملك الغابة", "له زئير قوي"], "hint": "من فصيلة السنوريات المفترسة"},
+        {"animal": "قطه", "display": "قطة", "clues": ["حيوان أليف", "صوته مواء"], "hint": "تحب شرب الحليب واللعب بالصوف"},
+        {"animal": "فيل", "display": "فيل", "clues": ["أضخم حيوان يابسة", "يمتلك خرطوماً طويلاً"], "hint": "له آذان عريضة جداً وأنياب عاجية"},
+        {"animal": "ذئب", "display": "ذئب", "clues": ["يعيش في قطعان", "يعوي ليلاً باتجاه القمر"], "hint": "يشبه الكلب البري وله حاسة شم خارقة"},
+        {"animal": "ارنب", "display": "أرنب", "clues": ["حيوان سريع ومرن", "له أذنان طويلتان"], "hint": "طعامه المفضل الجزر والخضار"}
     ],
     "متوسط": [
-        {"animal": "زرافه", "display": "زرافة", "clues": ["أطول حيوان في العالم", "رقبتها طويلة جداً", "جلدها مرقط"]},
-        {"animal": "بطريق", "display": "بطريق", "clues": ["طائر لا يطير", "سباح ماهر جداً", "يعيش في الجليد"]},
-        {"animal": "كنغر", "display": "كنغر", "clues": ["يتحرك بالقفز العالي", "يحمل صغيره في جراب أمامي", "موطنه أستراليا"]}
+        {"animal": "زرافه", "display": "زرافة", "clues": ["أطول كائن بري", "جلدها مرقط بالبني والأصفر"], "hint": "تأكل من قمم أشجار السنط بلسانها الطويل"},
+        {"animal": "بطريق", "display": "بطريق", "clues": ["طائر لا يستطيع الطيران", "سباح ماهر جداً في الماء"], "hint": "يعيش في الثلوج القطبية ويرتدي بدلة طبيعية سوداء وبيضاء"},
+        {"animal": "كنغر", "display": "كنغر", "clues": ["يتحرك بالقفز على رجليه الخلفيتين", "موطنه الأصلي قارة أستراليا"], "hint": "تحمل الأنثى صغيرها في جيب على بطنها"},
+        {"animal": "دلفين", "display": "دلفين", "clues": ["حيوان بحري ذكي جداً", "يتنفس الهواء ويتواصل بالصفير"], "hint": "صديق للإنسان ولا يعتبر سمكة بل من الثدييات"},
+        {"animal": "نسر", "display": "نسر", "clues": ["طائر جارح حاد البصر", "يبني عشه في قمم الجبال الشاهقة"], "hint": "له مخالب فولاذية وأجنحة ضخمة"}
     ],
     "صعب": [
-        {"animal": "خلد الماء", "display": "خلد الماء (بلاتيبوس)", "clues": ["ثديي يبيض ولا يلد", "له منقار كالبط وذيل كالقندس", "ذكوره تفرز سماً من أرجلها"]},
-        {"animal": "الكسلان", "display": "حيوان الكسلان", "clues": ["أبطأ حيوان ثديي في العالم", "يقضي أغلب حياته معلقاً رأساً على عقب", "تنمو الطحالب الخضراء على فرائه"]},
-        {"animal": "اكل النمل", "display": "آكل النمل الحرشفى (البنغول)", "clues": ["جسمه مغطى بحراشف صلبة كالدروع", "يتكور كالكرة تماماً عند الإحساس بالخطر", "لسانه أطول من جسمه لالتقاط الحشرات"]},
-        {"animal": "دب الماء", "display": "دب الماء (تارديغرادا)", "clues": ["كائن مجهري خارق", "يستطيع العيش في الفضاء الخارجي وبدون ماء لسنوات", "يتحمل درجات حرارة متجمدة وإشعاعات نووية"]}
+        {"animal": "خلد الماء", "display": "خلد الماء (بلاتيبوس)", "clues": ["ثديي يبيض ولا يلد", "منقاره عريض يشبه البطة"], "hint": "ذكوره تفرز سماً للدفاع وذيله يشبه القندس"},
+        {"animal": "الكسلان", "display": "حيوان الكسلان", "clues": ["أبطأ ثديي في العالم", "يقضي عمره متعلقاً بالأشجار"], "hint": "تنمو الطحالب الخضراء على فرائه لكثرة سكونه"},
+        {"animal": "اكل النمل", "display": "آكل النمل الحرشفى (البنغول)", "clues": ["جسمه مصفح بحراشف عريضة قاسية", "يتكور كالكرة عند الخطر"], "hint": "لسانه فائق الطول ومغطى بمادة لزجة لاصطياد النمل"},
+        {"animal": "دب الماء", "display": "دب الماء (تارديغرادا)", "clues": ["كائن مجهري خارق للظروف الصعبة", "يعيش في الفراغ الجوي والإشعاع"], "hint": "يتحمل حرارة تقارب الصفر المطلق والجفاف لعقود"},
+        {"animal": "الحبار العملاق", "display": "الحبار العملاق", "clues": ["يسكن أعماق المحيط السحيقة", "له أكبر عيون في مملكة الحيوان"], "hint": "يخوض معارك أسطورية ضد حيتان العنبر"}
     ]
 }
 
-# تهيئة المتغيرات في الجلسة
+# تهيئة الجلسة
 if 'page' not in st.session_state:
     st.session_state.page = "menu"
 if 'players' not in st.session_state:
@@ -93,6 +102,14 @@ if 'solved' not in st.session_state:
     st.session_state.solved = False
 if 'last_status' not in st.session_state:
     st.session_state.last_status = None
+if 'hint_used' not in st.session_state:
+    st.session_state.hint_used = False
+
+# قوائم التتابع بدون تكرار
+if 'words_queue' not in st.session_state:
+    st.session_state.words_queue = []
+if 'animals_queue' not in st.session_state:
+    st.session_state.animals_queue = []
 
 def trigger_win_effects():
     st.balloons()
@@ -127,23 +144,37 @@ def next_turn():
 def setup_new_challenge():
     st.session_state.solved = False
     st.session_state.last_status = None
+    st.session_state.hint_used = False
     diff = st.session_state.difficulty
 
+    # 1. لعبة الأرقام
     if st.session_state.game_type == "numbers":
         max_num = 50 if diff == "سهل" else (150 if diff == "متوسط" else 500)
         st.session_state.secret_num = random.randint(0, max_num)
         st.session_state.max_limit = max_num
 
+    # 2. لعبة الكلمات (تتابع بدون تكرار)
     elif st.session_state.game_type == "words":
-        word_list = WORDS_DATA[diff]
-        chosen = random.choice(word_list)
+        if not st.session_state.words_queue:
+            q = list(WORDS_BANK[diff])
+            random.shuffle(q)
+            st.session_state.words_queue = q
+        
+        chosen = st.session_state.words_queue.pop(0)
         scrambled = list(chosen)
         random.shuffle(scrambled)
         st.session_state.secret_word = chosen
         st.session_state.scrambled_word = " - ".join(scrambled)
 
+    # 3. لعبة الحيوانات (تتابع بدون تكرار)
     elif st.session_state.game_type == "animals":
-        st.session_state.animal_data = random.choice(ANIMALS_DATA[diff])
+        if not st.session_state.animals_queue:
+            q = list(ANIMALS_BANK[diff])
+            random.shuffle(q)
+            st.session_state.animals_queue = q
+            
+        chosen = st.session_state.animals_queue.pop(0)
+        st.session_state.animal_data = chosen
 
 # ----------------- 1. القائمة الرئيسية -----------------
 if st.session_state.page == "menu":
@@ -174,31 +205,27 @@ if st.session_state.page == "menu":
 
 # ----------------- 2. التعليمات -----------------
 elif st.session_state.page == "instructions":
-    st.title("📜 تعليمات الألعاب والمستويات")
+    st.title("📜 تعليمات اللعبة ونظام المساعدات")
     st.markdown("""
-    - **خيارات الصعوبة:**
-      - 🟢 **سهل:** أرقام (0 إلى 50) | كلمات بسيطة | تلميحات واضحة.
-      - 🟡 **متوسط:** أرقام (0 إلى 150) | كلمات متوسطة | تلميحات معتدلة.
-      - 🔴 **صعب:** أرقام (0 إلى 500) | كلمات فضائية مركبة | حيوانات وكائنات خارقة بتلميحات ذكية.
-    - **كتابة الإجابة:** النظام يقبل الإجابة سواء كتبتها بهمزة أو بدون همزة (أ/ا) وبالتاء أو الهاء (ة/ه).
-    - **التخمين التالي:** بعد حل أي لغز، اضغط على زر **التخمين التالي ⏭️** لبدء لغز جديد مع احتساب النقاط وتناوب الأدوار.
-    - **تصفير النتائج:** يمكنك تصفير كافة النقاط في أي وقت من شاشة الألعاب.
+    - **التتابع ومنع التكرار:** الأسئلة تظهر بالتسلسل دون أي تكرار لنفس اللغز حتى نهاية القائمة.
+    - **نظام المساعدات والخصم:**
+      - يمكنك طلب مساعدة أثناء أي لغز لكشف تلميح إضافي أو حرف من الكلمة.
+      - **تنبيه:** طلب المساعدة يخصم نصف نقاط الإجابة المحتسبة لك!
+    - **النقاط:**
+      - سهل: 10 نقاط (تصبح 5 مع المساعدة).
+      - متوسط: 20 نقطة (تصبح 10 مع المساعدة).
+      - صعب: 30 نقطة (تصبح 15 مع المساعدة).
     """)
     if st.button("⬅ العودة للقائمة"):
         st.session_state.page = "menu"
         st.rerun()
 
-# ----------------- 3. إعداد اللاعبين والمستوى -----------------
+# ----------------- 3. إعداد اللاعبين -----------------
 elif st.session_state.page == "setup_players":
     st.title("👥 إعداد اللعبة")
     
     st.subheader("1. اختر مستوى الصعوبة:")
-    diff_choice = st.radio(
-        "المستوى:",
-        options=["سهل", "متوسط", "صعب"],
-        horizontal=True,
-        index=0
-    )
+    diff_choice = st.radio("المستوى:", ["سهل", "متوسط", "صعب"], horizontal=True, index=0)
     st.session_state.difficulty = diff_choice
 
     st.subheader("2. حدد عدد اللاعبين:")
@@ -217,6 +244,8 @@ elif st.session_state.page == "setup_players":
             st.session_state.players = names
             st.session_state.scores = {n: saved_scores.get(n, 0) for n in names}
             st.session_state.current_turn = 0
+            st.session_state.words_queue = []
+            st.session_state.animals_queue = []
             st.session_state.page = "choose_game"
             st.rerun()
     with col_back:
@@ -224,7 +253,7 @@ elif st.session_state.page == "setup_players":
             st.session_state.page = "menu"
             st.rerun()
 
-# ----------------- 4. اختيار اللعبة وإدارة النتائج -----------------
+# ----------------- 4. اختيار اللعبة -----------------
 elif st.session_state.page == "choose_game":
     diff = st.session_state.difficulty
     st.title("🕹️ اختر لعبة التخمين")
@@ -245,13 +274,13 @@ elif st.session_state.page == "choose_game":
             st.session_state.page = "play"
             st.rerun()
     with g2:
-        if st.button("🔤 تخمين الكلمة\n(حروف مبعثرة)"):
+        if st.button("🔤 تخمين الكلمة\n(حروف مبعثرة متتابعة)"):
             st.session_state.game_type = "words"
             setup_new_challenge()
             st.session_state.page = "play"
             st.rerun()
     with g3:
-        if st.button("🦁 خمن الكائن / الحيوان\n(بالتلميحات)"):
+        if st.button("🦁 خمن الكائن / الحيوان\n(بالتلميحات المتتابعة)"):
             st.session_state.game_type = "animals"
             setup_new_challenge()
             st.session_state.page = "play"
@@ -274,18 +303,22 @@ elif st.session_state.page == "choose_game":
             for p in st.session_state.players:
                 all_s[p] = 0
             save_scores(all_s)
-            st.success("تم تصفير جميع النتائج بنجاح!")
+            st.success("تم تصفير النتائج بنجاح!")
             st.rerun()
 
-# ----------------- 5. ساحة اللعب وعرض النتيجة -----------------
+# ----------------- 5. ساحة اللعب ونظام المساعدات -----------------
 elif st.session_state.page == "play":
     current_player = st.session_state.players[st.session_state.current_turn]
     diff = st.session_state.difficulty
-    points_reward = 10 if diff == "سهل" else (20 if diff == "متوسط" else 30)
+    
+    # حساب النقاط بعد الخصم عند استعمال المساعدة
+    base_points = 10 if diff == "سهل" else (20 if diff == "متوسط" else 30)
+    actual_points = (base_points // 2) if st.session_state.hint_used else base_points
 
     st.markdown(f"### 🎯 دور: <span style='color:#38bdf8;'>{current_player}</span> | المستوى: <span style='color:#fbbf24;'>{diff}</span>", unsafe_allow_html=True)
+    if st.session_state.hint_used:
+        st.caption(f"⚠️ تم تفعيل المساعدة: قيمة هذا اللغز الآن **{actual_points} نقطة** فقط بدلاً من {base_points}.")
 
-    # عرض الرسالة الأخيرة للإجابة (صحيحة / خاطئة)
     if st.session_state.last_status:
         st.markdown(st.session_state.last_status, unsafe_allow_html=True)
 
@@ -294,6 +327,18 @@ elif st.session_state.page == "play":
         max_l = st.session_state.max_limit
         st.subheader(f"🔢 خمّن الرقم السري (0 - {max_l})")
         
+        # زر طلب المساعدة للأرقام
+        if not st.session_state.solved and not st.session_state.hint_used:
+            if st.button(f"💡 طلب مساعدة (خصم {base_points // 2} نقطة)"):
+                st.session_state.hint_used = True
+                st.rerun()
+                
+        if st.session_state.hint_used:
+            sec = st.session_state.secret_num
+            low = max(0, sec - (max_l // 6))
+            high = min(max_l, sec + (max_l // 6))
+            st.markdown(f"<div class='hint-box'>💡 <b>مساعدة:</b> الرقم يقع بالتأكيد بين <b>{low}</b> و <b>{high}</b>!</div>", unsafe_allow_html=True)
+
         guess = st.number_input("أدخل تخمينك:", min_value=0, max_value=max_l, step=1, disabled=st.session_state.solved, key="num_in")
         
         if not st.session_state.solved:
@@ -308,8 +353,8 @@ elif st.session_state.page == "play":
                     next_turn()
                     st.rerun()
                 else:
-                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة وممتازة يا {current_player}! الرقم هو ({sec}) (+{points_reward} نقطة)</div>"
-                    st.session_state.scores[current_player] += points_reward
+                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة يا {current_player}! الرقم هو ({sec}) (+{actual_points} نقطة)</div>"
+                    st.session_state.scores[current_player] += actual_points
                     st.session_state.solved = True
                     trigger_win_effects()
                     st.rerun()
@@ -318,14 +363,23 @@ elif st.session_state.page == "play":
     elif st.session_state.game_type == "words":
         st.subheader("🔤 رتّب الحروف واكتشف الكلمة:")
         st.markdown(f"## ` {st.session_state.scrambled_word} `")
+        
+        if not st.session_state.solved and not st.session_state.hint_used:
+            if st.button(f"💡 كشف الحرف الأول (خصم {base_points // 2} نقطة)"):
+                st.session_state.hint_used = True
+                st.rerun()
+                
+        if st.session_state.hint_used:
+            first_letter = st.session_state.secret_word[0]
+            st.markdown(f"<div class='hint-box'>💡 <b>مساعدة:</b> الكلمة تبدأ بحرف: <b>'{first_letter}'</b></div>", unsafe_allow_html=True)
+
         word_guess = st.text_input("اكتب الكلمة الصحيحة:", disabled=st.session_state.solved, key="word_in").strip()
         
         if not st.session_state.solved:
             if st.button("تحقق من الكلمة 🚀"):
-                # مقارنة متساهلة مع الهمزات
                 if normalize_arabic(word_guess) == normalize_arabic(st.session_state.secret_word):
-                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة يا {current_player}! الكلمة هي: {st.session_state.secret_word} (+{points_reward} نقطة)</div>"
-                    st.session_state.scores[current_player] += points_reward
+                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة يا {current_player}! الكلمة هي: {st.session_state.secret_word} (+{actual_points} نقطة)</div>"
+                    st.session_state.scores[current_player] += actual_points
                     st.session_state.solved = True
                     trigger_win_effects()
                     st.rerun()
@@ -334,11 +388,19 @@ elif st.session_state.page == "play":
                     next_turn()
                     st.rerun()
 
-    # 3. لعبة الحيوانات والكائنات
+    # 3. لعبة الحيوانات
     elif st.session_state.game_type == "animals":
         st.subheader("🦁 من أكون؟ اقرأ التلميحات وخمّن الكائن:")
         for idx, clue in enumerate(st.session_state.animal_data["clues"], 1):
             st.write(f"💡 **تلميح {idx}:** {clue}")
+
+        if not st.session_state.solved and not st.session_state.hint_used:
+            if st.button(f"💡 كشف تلميح ذهبي إضافي (خصم {base_points // 2} نقطة)"):
+                st.session_state.hint_used = True
+                st.rerun()
+
+        if st.session_state.hint_used:
+            st.markdown(f"<div class='hint-box'>💡 <b>تلميح إضافي خاص:</b> {st.session_state.animal_data['hint']}</div>", unsafe_allow_html=True)
 
         animal_guess = st.text_input("اسم الحيوان / الكائن:", disabled=st.session_state.solved, key="animal_in").strip()
         
@@ -346,8 +408,8 @@ elif st.session_state.page == "play":
             if st.button("تحقق من الإجابة 🚀"):
                 target = st.session_state.animal_data["animal"]
                 if normalize_arabic(animal_guess) == normalize_arabic(target):
-                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة يا بطل {current_player}! هو بالفعل {st.session_state.animal_data['display']} (+{points_reward} نقطة)</div>"
-                    st.session_state.scores[current_player] += points_reward
+                    st.session_state.last_status = f"<div style='color:#4ade80; font-weight:bold; font-size:20px;'>🎉 إجابة صحيحة يا بطل {current_player}! هو بالفعل {st.session_state.animal_data['display']} (+{actual_points} نقطة)</div>"
+                    st.session_state.scores[current_player] += actual_points
                     st.session_state.solved = True
                     trigger_win_effects()
                     st.rerun()
@@ -356,10 +418,10 @@ elif st.session_state.page == "play":
                     next_turn()
                     st.rerun()
 
-    # زر "التخمين التالي" عند الحل الصحيح
+    # زر التخمين التالي
     if st.session_state.solved:
         st.write("---")
-        if st.button("التخمين التالي ⏭️ (لغز جديد)", type="primary"):
+        if st.button("التخمين التالي ⏭️ (سؤال جديد متتابع)", type="primary"):
             next_turn()
             setup_new_challenge()
             st.rerun()
@@ -379,14 +441,14 @@ elif st.session_state.page == "play":
             st.session_state.page = "exit"
             st.rerun()
 
-# ----------------- 6. صفحة الخروج والنتائج -----------------
+# ----------------- 6. الخروج والنتائج -----------------
 elif st.session_state.page == "exit":
     st.title("🏆 لوحة الشرف والنتائج")
     all_scores = load_saved_scores()
 
     if all_scores:
         sorted_scores = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
-        st.success("✅ تم حفظ كافة البيانات بنجاح!")
+        st.success("✅ تم حفظ نتائج الجولة بنجاح!")
         for rank, (player, score) in enumerate(sorted_scores, 1):
             medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else "🎖️"
             st.write(f"### {medal} المركز {rank}: {player} ⟵ {score} نقطة")
