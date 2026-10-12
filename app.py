@@ -1,9 +1,27 @@
 import streamlit as st
 import random
+import json
+import os
 
 st.set_page_config(page_title="Stars & Moons - Game Hub", page_icon="🎮", layout="centered")
 
-# تصميم الألوان والخلفية
+SCORES_FILE = "scores.json"
+
+# دوال إدارة الحفظ والاسترجاع
+def load_saved_scores():
+    if os.path.exists(SCORES_FILE):
+        try:
+            with open(SCORES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_scores(scores_dict):
+    with open(SCORES_FILE, "w", encoding="utf-8") as f:
+        json.dump(scores_dict, f, ensure_ascii=False, indent=2)
+
+# تصميم الواجهة
 st.markdown("""
     <style>
     .main {
@@ -19,17 +37,9 @@ st.markdown("""
         border-radius: 12px;
         font-weight: bold;
     }
-    .score-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 15px;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# بنك الكلمات والحيوانات
 WORDS_BANK = ["كوكب", "مجرة", "صاروخ", "سفينة", "فضاء", "تلسكوب", "نيزك", "شمس"]
 ANIMALS_BANK = [
     {"animal": "أسد", "clues": ["ملك الغابة", "له شعر كثيف حول رقبته (لبدة)", "يعيش في جماعات"]},
@@ -38,17 +48,16 @@ ANIMALS_BANK = [
     {"animal": "بطريق", "clues": ["طائر لا يطير", "سباح ماهر جداً", "يعيش في المناطق الجليدية"]}
 ]
 
-# تهيئة الذاكرة
+# تهيئة الجلسة
 if 'page' not in st.session_state:
     st.session_state.page = "menu"
 if 'players' not in st.session_state:
     st.session_state.players = []
 if 'scores' not in st.session_state:
-    st.session_state.scores = {}
+    st.session_state.scores = load_saved_scores()
 if 'current_turn' not in st.session_state:
     st.session_state.current_turn = 0
 
-# دوال مساعدة
 def trigger_win_effects():
     st.balloons()
     st.components.v1.html("""
@@ -82,7 +91,7 @@ def next_turn():
 # ----------------- 1. القائمة الرئيسية -----------------
 if st.session_state.page == "menu":
     st.title("⭐ Stars and Moons 🌙")
-    st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة ألعاب التخمين والتحدي</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة ألعاب التخمين والتحدي الجماعي</p>", unsafe_allow_html=True)
     
     st.code("""1. Instructions (التعليمات)
 2. Start Game (بدء اللعب)
@@ -102,60 +111,68 @@ if st.session_state.page == "menu":
             st.session_state.page = "exit"
             st.rerun()
 
-# ----------------- صفحة التعليمات -----------------
+    # استعراض النتائج المحفوظة مسبقاً إن وجدت
+    saved = load_saved_scores()
+    if saved:
+        st.write("---")
+        st.markdown("### 🏆 لوحة الشرف المحفوظة:")
+        sorted_saved = sorted(saved.items(), key=lambda x: x[1], reverse=True)
+        for rank, (player, score) in enumerate(sorted_saved, 1):
+            st.write(f"**المركز {rank}:** {player} ⟵ **{score} نقطة**")
+
+# ----------------- 2. صفحة التعليمات -----------------
 elif st.session_state.page == "instructions":
     st.title("📜 تعليمات الألعاب")
     st.markdown("""
-    - **تخمين الأرقام:** يخمن اللاعب رقماً بين 0 و 300 مع إرشادات (أكبر / أصغر).
-    - **تخمين الكلمة:** تظهر أحرف الكلمة مبعثرة والمطلوب معرفة الكلمة الصحيحة.
-    - **تخمين الحيوان:** يُعطى اللاعب 3 تلميحات ذكية لمعرفة اسم الحيوان.
-    - يدعم النظام اللعب الفردي أو الجماعي (حتى 3 لاعبين) مع لوحة نتائج تفاعلية!
+    - **تخمين الأرقام:** خمن الرقم بين 0 و 300 مع توجيهات (أكبر / أصغر).
+    - **تخمين الكلمة:** أعد ترتيب الحروف المبعثرة لمعرفة الكلمة الصحيحة.
+    - **تخمين الحيوان:** استنتج اسم الحيوان من 3 تلميحات ذكية.
+    - **الحفظ التلقائي:** يتم حفظ النقاط تلقائياً ويمكنك الخروج في أي وقت وحفظ الترتيب النهائي!
     """)
     if st.button("⬅ العودة للقائمة"):
         st.session_state.page = "menu"
         st.rerun()
 
-# ----------------- صفحة الخروج -----------------
-elif st.session_state.page == "exit":
-    st.title("👋 مع السلامة!")
-    st.info("شكراً لتجربتك اللعبة. يمكنك العودة في أي وقت بالضغط بالأسفل.")
-    if st.button("🔄 إعادة تشغيل القائمة"):
-        st.session_state.page = "menu"
-        st.rerun()
-
-# ----------------- إعداد اللاعبين -----------------
+# ----------------- 3. إعداد اللاعبين -----------------
 elif st.session_state.page == "setup_players":
-    st.title("👥 إعداد اللاعبين")
-    num_players = st.radio("كم شخص سيلعب؟", [1, 2, 3], horizontal=True)
+    st.title("👥 تسجيل اللاعبين")
+    num_players = st.radio("اختر عدد اللاعبين:", [1, 2, 3], horizontal=True)
 
     names = []
+    saved_scores = load_saved_scores()
     for i in range(num_players):
-        name = st.text_input(f"اسم اللاعب {i+1}:", value=f"لاعب {i+1}", key=f"p_{i}")
-        names.append(name.strip())
+        default_name = f"لاعب {i+1}"
+        name = st.text_input(f"اسم اللاعب {i+1}:", value=default_name, key=f"player_input_{i}").strip()
+        names.append(name if name else default_name)
 
-    if st.button("متابعة لاختيار اللعبة 🎮", type="primary"):
-        st.session_state.players = names
-        st.session_state.scores = {n: 0 for n in names}
-        st.session_state.current_turn = 0
-        st.session_state.page = "choose_game"
-        st.rerun()
+    col_start, col_back = st.columns(2)
+    with col_start:
+        if st.button("متابعة لاختيار اللعبة 🎮", type="primary"):
+            st.session_state.players = names
+            # استعادة النقاط السابقة لنفس اللاعب أو البدء من الصفر
+            st.session_state.scores = {n: saved_scores.get(n, 0) for n in names}
+            st.session_state.current_turn = 0
+            st.session_state.page = "choose_game"
+            st.rerun()
+    with col_back:
+        if st.button("⬅ رجوع"):
+            st.session_state.page = "menu"
+            st.rerun()
 
-# ----------------- اختيار نوع اللعبة -----------------
+# ----------------- 4. اختيار اللعبة -----------------
 elif st.session_state.page == "choose_game":
     st.title("🕹️ اختر لعبة التخمين")
     
-    # عرض لوحة النتائج
-    st.markdown("### 🏆 لوحة النتائج الحالية")
+    st.markdown("### 🏆 النتائج الحالية:")
     cols = st.columns(len(st.session_state.players))
-    for idx, (p, s) in enumerate(st.session_state.scores.items()):
-        cols[idx].metric(label=p, value=f"{s} نقطة")
+    for idx, p in enumerate(st.session_state.players):
+        cols[idx].metric(label=p, value=f"{st.session_state.scores.get(p, 0)} نقطة")
     st.write("---")
 
     g1, g2, g3 = st.columns(3)
     with g1:
         if st.button("🔢 تخمين الأرقام\n(0 - 300)"):
             st.session_state.secret_num = random.randint(0, 300)
-            st.session_state.num_attempts = 0
             st.session_state.game_type = "numbers"
             st.session_state.page = "play"
             st.rerun()
@@ -171,23 +188,42 @@ elif st.session_state.page == "choose_game":
             st.rerun()
     with g3:
         if st.button("🦁 خمن الحيوان\n(بالتلميحات)"):
-            chosen_animal = random.choice(ANIMALS_BANK)
-            st.session_state.animal_data = chosen_animal
+            st.session_state.animal_data = random.choice(ANIMALS_BANK)
             st.session_state.game_type = "animals"
             st.session_state.page = "play"
             st.rerun()
 
-# ----------------- ساحة اللعب -----------------
+    st.write("---")
+    c_exit, c_reset = st.columns(2)
+    with c_exit:
+        if st.button("💾 حفظ النتائج والخروج 🚪", type="secondary"):
+            # دمج النتائج مع المحفوظات وحفظها
+            current_all = load_saved_scores()
+            current_all.update(st.session_state.scores)
+            save_scores(current_all)
+            st.session_state.page = "exit"
+            st.rerun()
+    with c_reset:
+        if st.button("🔄 تصفير النقاط"):
+            for p in st.session_state.players:
+                st.session_state.scores[p] = 0
+            current_all = load_saved_scores()
+            for p in st.session_state.players:
+                current_all[p] = 0
+            save_scores(current_all)
+            st.success("تم تصفير النقاط بنجاح!")
+            st.rerun()
+
+# ----------------- 5. ساحة اللعب -----------------
 elif st.session_state.page == "play":
     current_player = st.session_state.players[st.session_state.current_turn]
     st.markdown(f"### 🎯 دور اللاعب: <span style='color:#38bdf8;'>{current_player}</span>", unsafe_allow_html=True)
 
-    # 1. لعبة الأرقام
+    # 1. الأرقام
     if st.session_state.game_type == "numbers":
         st.subheader("🔢 خمّن الرقم السري (0 - 300)")
-        guess = st.number_input("أدخل تخمينك:", min_value=0, max_value=300, step=1)
+        guess = st.number_input("أدخل تخمينك:", min_value=0, max_value=300, step=1, key="num_in")
         if st.button("تحقق 🚀"):
-            st.session_state.num_attempts += 1
             sec = st.session_state.secret_num
             if guess < sec:
                 st.info("الرقم السري أكبر من ذلك ⬆️")
@@ -196,50 +232,88 @@ elif st.session_state.page == "play":
                 st.warning("الرقم السري أصغر من ذلك ⬇️")
                 next_turn()
             else:
-                st.success(f"🎉 أحسنت يا {current_player}! خمنت الرقم الصحيح ({sec})!")
+                st.success(f"🎉 أحسنت يا {current_player}! الرقم هو {sec} (+10 نقاط)")
                 st.session_state.scores[current_player] += 10
+                # حفظ فوري
+                all_s = load_saved_scores()
+                all_s.update(st.session_state.scores)
+                save_scores(all_s)
                 trigger_win_effects()
-                st.balloons()
                 if st.button("العودة لاختيار لعبة 🔄"):
                     st.session_state.page = "choose_game"
                     st.rerun()
 
-    # 2. لعبة الكلمات
+    # 2. الكلمات
     elif st.session_state.game_type == "words":
         st.subheader("🔤 رتّب الحروف واكتشف الكلمة:")
         st.markdown(f"## ` {st.session_state.scrambled_word} `")
-        word_guess = st.text_input("اكتب الكلمة الصحيحة:").strip()
+        word_guess = st.text_input("اكتب الكلمة الصحيحة:", key="word_in").strip()
         if st.button("إرسال الإجابة 🚀"):
             if word_guess == st.session_state.secret_word:
-                st.success(f"🎉 بطل يا {current_player}! الكلمة صحيحة: {st.session_state.secret_word}")
+                st.success(f"🎉 ممتاز يا {current_player}! الكلمة صحيحة (+10 نقاط)")
                 st.session_state.scores[current_player] += 10
+                all_s = load_saved_scores()
+                all_s.update(st.session_state.scores)
+                save_scores(all_s)
                 trigger_win_effects()
                 if st.button("العودة لاختيار لعبة 🔄"):
                     st.session_state.page = "choose_game"
                     st.rerun()
             else:
-                st.error("إجابة غير صحيحة، حاول مجدداً في دورك القادم!")
+                st.error("إجابة غير صحيحة! الدور ينتقل للاعب التالي...")
                 next_turn()
 
-    # 3. لعبة الحيوانات
+    # 3. الحيوانات
     elif st.session_state.game_type == "animals":
         st.subheader("🦁 من أكون؟ اقرأ التلميحات وخمّن الحيوان:")
         for idx, clue in enumerate(st.session_state.animal_data["clues"], 1):
             st.write(f"💡 **تلميح {idx}:** {clue}")
-        animal_guess = st.text_input("اسم الحيوان:").strip()
+        animal_guess = st.text_input("اسم الحيوان:", key="animal_in").strip()
         if st.button("تحقق من الحيوان 🚀"):
             if animal_guess == st.session_state.animal_data["animal"]:
-                st.success(f"🎉 ممتاز يا {current_player}! الحيوان هو بالفعل {animal_guess}")
+                st.success(f"🎉 رائع يا {current_player}! الحيوان هو {animal_guess} (+10 نقاط)")
                 st.session_state.scores[current_player] += 10
+                all_s = load_saved_scores()
+                all_s.update(st.session_state.scores)
+                save_scores(all_s)
                 trigger_win_effects()
                 if st.button("العودة لاختيار لعبة 🔄"):
                     st.session_state.page = "choose_game"
                     st.rerun()
             else:
-                st.error("خطأ! الدور ينتقل للاعب التالي...")
+                st.error("إجابة خاطئة! الدور ينتقل للاعب التالي...")
                 next_turn()
 
     st.write("---")
-    if st.button("🚪 إنهاء الجولة والعودة لاختيار الألعاب"):
-        st.session_state.page = "choose_game"
+    col_back, col_exit = st.columns(2)
+    with col_back:
+        if st.button("⬅ التوقف والعودة للقائمة"):
+            st.session_state.page = "choose_game"
+            st.rerun()
+    with col_exit:
+        if st.button("💾 حفظ وخروج نهائي 🚪"):
+            all_s = load_saved_scores()
+            all_s.update(st.session_state.scores)
+            save_scores(all_s)
+            st.session_state.page = "exit"
+            st.rerun()
+
+# ----------------- 6. صفحة الخروج وشاشة التكريم -----------------
+elif st.session_state.page == "exit":
+    st.title("🏆 النتائج النهائية والمحفوظة")
+    all_scores = load_saved_scores()
+    
+    if all_scores:
+        sorted_scores = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
+        st.success("✅ تم حفظ كافة النتائج بأمان في ملف البيانات!")
+        st.markdown("### 🥇 ترتيب الأبطال:")
+        for rank, (player, score) in enumerate(sorted_scores, 1):
+            medal = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else "🎖️"
+            st.write(f"### {medal} المركز {rank}: {player} ⟵ {score} نقطة")
+    else:
+        st.info("شكراً لتجربتك اللعبة!")
+
+    st.write("---")
+    if st.button("🔄 العودة إلى الشاشة الرئيسية"):
+        st.session_state.page = "menu"
         st.rerun()
